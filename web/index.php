@@ -1,14 +1,26 @@
 <?php  
 
 //carga el modelo y los controladores
-require_once __DIR__ . '';
+require_once '../app/modelo/Anuncio.php';
+require_once '../app/modelo/Conexion.php';
+require_once '../app/modelo/GestorAnuncio.php';
+require_once '../app/modelo/MensajeFlash.php';
+require_once '../app/modelo/Session.php';
+require_once '../app/modelo/Usuario.php';
+require_once '../app/modelo/GestorUsuario.php';
+require_once '../app/modelo/funciones.php';
+require_once '../app/controlador/controladorAnuncios.php';
+require_once '../app/controlador/controladorUsuarios.php';
+
+
 
 //enrutamiento
 $map = array( 
-    'inicio' => array('controller' => 'Controller', 'action'=>'inicio'),
-    'listar' => array('controller' =>'Controller', 'action' =>'listar'),
-    'insertar' => array('controller' =>'Controller', 'action' =>'insertar'),
-    'ver' => array('controller' =>'Controller', 'action' =>'ver')
+   //Anuncios
+    'listar_anuncios'=>array('controlador'=>'ControladorAnuncios','metodo'=>'listar','publica'=>true),
+    'ver_anuncio'=>array('controlador'=>'ControladorAnuncios','metodo'=>'ver','publica'=>true),
+    'insertar_anuncio'=> array('controlador'=>'ControladorAnuncios','metodo'=>'insertar','publica'=> false),
+    'borrar_anuncio'=>array('controlador'=>'ControladorAnuncios','metodo'=>'borrar','publica'=>false),
 );
 
 
@@ -23,20 +35,26 @@ $map = array(
     }
 }
 else{
-    $accion = 'inicio';    //Acción por defecto
+    $accion = 'listar_anuncios';    //Acción por defecto
 }
- 
- $controlador = $map[$ruta];
- // Ejecución del controlador asociado a la ruta
 
- if (method_exists($controlador['controller'],$controlador['action'])) {
-     call_user_func(array(new $controlador['controller'], $controlador['action']));
- } else {
+ //Si no ha iniciado sesión pero sí tiene cookie, iniciamos la sesión de forma automática
+if(!Session::esta_iniciada() && Session::existe_cookie()){
+    $gu = new GestorUsuario(Conexion::conectar());
+    if($usuario = $gu->obtener_uid(Session::obtener_cookie())){
+        Session::crear_cookie($usuario->getUid());
+        Session::iniciar($usuario);
+    }
+}
 
-     header('Status: 404 Not Found');
-     echo '<html><body><h1>Error 404: El controlador <i>' .
-             $controlador['controller'] .
-             '->' .
-             $controlador['action'] .
-             '</i> no existe</h1></body></html>';
- }
+if(!Session::esta_iniciada() && !$mapa[$accion]['publica']) {
+    MensajeFlash::anadir_mensaje("Debes iniciar sesión para entrar en la página $accion.");
+    header("Location:" . RUTA . "listar_anuncios");
+    die();
+}
+
+$clase_controlador = $mapa[$accion]['controlador'];
+$metodo_controlador = $mapa[$accion]['metodo'];
+//Ejecutamos el método del controlador
+$objeto = new $clase_controlador();
+$objeto->$metodo_controlador();

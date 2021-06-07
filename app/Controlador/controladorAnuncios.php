@@ -2,13 +2,13 @@
 
  class Controller
  {
-    function listar() {
+    function listar_anuncios() {
         $conn = Conexion::conectar();
-        $gm = new GestorAnuncios($conn);
-        $mensajes = $gm->obtener_todos();
+        $ga = new GestorAnuncios($conn);
+        $anuncios = $ga->obtener_todos();
         require '../app/vistas/listar_anuncios.php';
     }
-    function insertar(){
+    function insertar_anuncios(){
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $anuncio = new Anuncio();
             $anuncio->setId_usuario(Session::obtener()->getId());
@@ -31,7 +31,25 @@
             header('Location: ' . RUTA . 'listar_anuncios');
             die();
         }
-        require '../app/vistas/insertar_mensaje.php';
+        require '../app/vistas/insertar_Anuncio.php';
+    }
+    function borrar_anuncio() {
+        $conn = Conexion::conectar();
+        $ga = new GestorAnuncios($conn);
+        $id = filter_var($_GET['id'], FILTER_SANITIZE_NUMBER_INT);
+        if(!$anuncio = $ga->obtener($id)){
+            echo "no_encontrado";
+            die();
+        }
+        if ($anuncio->getId_usuario() == Session::obtener()->getId()) {
+            if ($ga->borrar($id)) {
+                echo "ok";
+            } else {
+                echo "no_encontrado";
+            }
+        } else {
+            echo "no_propietario";
+        }
     }
 
  }
